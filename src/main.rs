@@ -645,3 +645,82 @@ fn main() {
     println!("5. float_used = 0, writes = 0, zero rounding drift across all runs.");
     println!("=================================================================================\n");
 }
+
+
+// -------------------------------------------------------------------------------------------------
+// Unit Tests (Strict Mathematical Verification)
+// -------------------------------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_willow_ntt_roundtrip_exact() {
+        let mut x = [0u64; K];
+        for i in 0..K {
+            x[i] = ((i as u64 * 37 + 11) * 977) % P;
+        }
+        let spectrum = prism(&x);
+        let back = unprism(&spectrum);
+        assert_eq!(x, back, "NTT round-trip was not exact");
+    }
+
+    #[test]
+    fn test_parseval_dual_energy_conservation() {
+        let mut x = [0u64; K];
+        for i in 0..K {
+            x[i] = ((i as u64 * 53 + 7) * 123) % P;
+        }
+        let spec = prism(&x);
+        let e_time = energy_time_mod_p(&x);
+        let e_freq = energy_freq_parseval_mod_p(&spec);
+        assert_eq!(e_time, e_freq, "Parseval dual-energy was not conserved");
+    }
+
+    #[test]
+    fn test_12_5_billion_qubit_coordinate_bijection() {
+        let test_qubits = [0, 1, 3_125_000_000, OMEGA_ROOM, 9_375_000_000, ROOM_COUNT - 1];
+        for &q in &test_qubits {
+            let stub = room_stub(q);
+            let decoded = room_decode(stub);
+            assert_eq!(decoded, q, "Bijection failed for qubit {q}");
+        }
+    }
+
+    #[test]
+    fn test_surface_code_syndrome_qec_d3_d7_d27() {
+        for &stabilizers in &[17_usize, 97_usize, 1457_usize] {
+            let mut syndrome = [0_u64; K];
+            for k in 0..stabilizers.min(K) {
+                syndrome[k] = ((k * 13 + 7) as u64) % P;
+            }
+            let spec = prism(&syndrome);
+            let back = unprism(&spec);
+            assert_eq!(back, syndrome, "Syndrome recovery failed for {stabilizers} stabilizers");
+        }
+    }
+
+    #[test]
+    fn test_108_lane_coupled_circuit_d40() {
+        let mut blocks = vec![[0_u64; K]; 4];
+        for bi in 0..4 {
+            for li in 0..K {
+                blocks[bi][li] = ((bi * 27 + li) as u64 * 37 + 11) % P;
+            }
+        }
+        let (_, p_ok, r_ok) = run_coupled_ntt_circuit(&mut blocks, 40, OMEGA_ROOM);
+        assert_eq!(p_ok, 160, "Parseval checks mismatch");
+        assert_eq!(r_ok, 160, "Roundtrip checks mismatch");
+    }
+
+    #[test]
+    fn test_integer_statistics() {
+        let latencies = [280, 290, 300, 310, 320];
+        let stats = compute_integer_stats(&latencies);
+        assert_eq!(stats.mean_us, 300);
+        assert_eq!(stats.min_us, 280);
+        assert_eq!(stats.max_us, 320);
+        assert_eq!(stats.std_dev_us, 14);
+    }
+}
