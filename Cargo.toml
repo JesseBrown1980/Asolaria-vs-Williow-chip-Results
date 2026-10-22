@@ -1,0 +1,16 @@
+[package]
+name = "asolaria-vs-willow-bench"
+version = "1.0.0"
+edition = "2021"
+rust-version = "1.81"
+authors = ["Jesse Daniel Brown <JesseBrown1980>", "Rayssa Chiqueto <liris-kuromi>"]
+description = "Asolaria vs. Google Willow Benchmark & Architectural Proofs (Results and HOW)"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+panic = "abort"
