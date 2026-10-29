@@ -4,7 +4,8 @@ This benchmark is one step in a longer line of work by Jesse Daniel Brown. Each 
 what it was, when it happened and where its record lives. The order follows Jesse's own account:
 the creation lineage he gave on 2026-06-16 (stages 1–6, recorded in
 [`what-is-asolaria`](https://github.com/JesseBrown1980/what-is-asolaria---how-do-we-get-reductions-in-everything),
-`ASOLARIA-CREATION-LINEAGE-AND-SUPERVISORS.md`), continued with the stages that followed.
+`ASOLARIA-CREATION-LINEAGE-AND-SUPERVISORS.md`), continued with the stages that followed. The hand-drawn flipchart sheets where the system was
+first laid out are transcribed in [`ORIGINS.md`](ORIGINS.md).
 
 ```mermaid
 flowchart TD
