@@ -8,7 +8,7 @@
 - Initial 5-Tier Sweep: [`receipts/WILLOW-ROOM-BENCH-20261022.hbp`](receipts/WILLOW-ROOM-BENCH-20261022.hbp) (`SHA-256: eb76c3c2da6f413340b06791d26df418df3c51970c56b46372040d92c0c171e7`)  
 - 10-Run Suite & 12.5B Plane: [`receipts/WILLOW-10RUNS-MAXTRITS-20261022.hbp`](receipts/WILLOW-10RUNS-MAXTRITS-20261022.hbp) (`SHA-256: ebb7455ff8946cf7f8f1c3975a75d85eaa15756b4e1f68934bbbe3a82a31558c`)  
 - Full Test Suite Execution Log: [`TESTS.md`](TESTS.md)  
-- Host8 rooms used for exact Yang–Mills computations, GitHub cross-checks and next tests: [`HOST8-ROOM-TESTS.md`](HOST8-ROOM-TESTS.md)  
+- Host8 plane (now 300 GB, 37.5B rooms) and the 27-lane prism in later experiments, plus next tests: [`HOST8-ROOM-TESTS.md`](HOST8-ROOM-TESTS.md)  
 **License:** MIT OR Apache-2.0 — **100% Free & Open Source for All**
 
 ---

@@ -1,88 +1,116 @@
-# Host8 rooms at work: exact Yang–Mills computations
+# The Host8 plane and the 27-lane prism in other experiments
 
-The Host8 room store (8-byte rooms on local disk, the same store this repository benchmarks)
-is now used as working memory for exact, integer-only spectral computations in
-[Finite-universe-Yang-mills-existence-and-mass-gap-using-HEB-C](https://github.com/JesseBrown1980/Finite-universe-Yang-mills-existence-and-mass-gap-using-HEB-C)
-(branch `ym-3x4-room-backed`, run log `native/ym/results/3x4_room_backed/RUN-LOG.md`).
+The machinery benchmarked here has since been used in four other repositories:
 
-The problem: a finite S₃ lattice gauge Hamiltonian whose matrix is too large for runner RAM
-(3×4 lattice, about 40 GB at 12 bytes per entry). The rooms hold the matrix, one 8-byte room
-per entry, written once and streamed in index order on every Gauss–Seidel sweep. Every
-result is an integer record with a SHA-256, and every run can be reproduced.
+- the Host8 identity plane (8-byte rooms addressed by 27 balanced trits, `room_stub` / `room_decode`);
+- the exact 27-lane NTT prism over P = 1,000,081 (W = 951,846, inverse of 27 = 963,041).
 
-## Tools
+Each repository reads the real store or reuses the prism, and seals its results as HBP
+receipts.
 
-| tool | what it does |
-|---|---|
-| `ymroom passa` | scans the whole gauge-fixed configuration space and keeps one representative per gauge orbit, with its weight and magnetic number |
-| `ymroom build` | writes each representative's row of the Hamiltonian as rooms: a header room `w:u32 \| mag:u16 \| cnt:u16`, then one room `j:u32 \| z:i32` per nonzero entry |
-| `roomschur` | the `shellschur` inertia count (Haynsworth Schur complement, interval Gauss–Seidel, BigInt LDLᵀ) with the matrix streamed from the rooms instead of held in RAM |
+## The store grew to 300 GB
 
-Both tools: Rust 1.81, `clippy -D warnings`, no floating point.
-
-## Results on Host8
-
-Machine: Intel i5-8300H (4 cores, 8 threads), 16 GiB RAM.
-
-| # | test | result | time |
-|---|---|---|---|
-| 1 | room builder vs reference builder `ymsec`, 2×3 lattice, byte compare | **EXACT**: 2,646 states, 74,956 nonzeros | 0.12 s |
-| 2 | same, 2×4 | **EXACT**: 58,040 states, 2,606,690 nonzeros | 5.9 s |
-| 3 | same, 3×3 | **EXACT**: 288,645 states, 15,408,669 nonzeros | 37.6 s |
-| 4 | 3×3 matrix written to rooms | 15,408,669 entries; symmetry check (W-self-adjoint) PASS; header read back EXACT | 93.8 s |
-| 5 | 3×3 eigenvalue count from rooms, threshold t = 60,000,000 | core 101, negative 7, PASS | 669 s |
-| 6 | 3×3 eigenvalue count from rooms, t = 90,000,000, segmented run | 2,931 of 2,940 core directions resolved, 9 unresolved: AMBIGUOUS | — |
-| 7 | **3×4 pass A**: every orbit of the 3×4 sector | **45,508,080 states, 7 flat**; matches the independent GitHub run 40391283682 | **23.3 min** on 8 threads |
-| 8 | 3×4 pass B: the 3×4 matrix written to rooms | in progress (about 3.35 × 10⁹ rooms, about 27 GB) | — |
-
-Test 7 is the 3×4 lattice's whole gauge-fixed configuration space, 6¹³ = 13,060,694,016
-configurations, reduced to 45,508,080 sector states on a 2018 laptop in 23 minutes.
-
-## Storage measured before any write
-
-| device | sequential read | 4 KiB random read |
+| | this repository (22 Oct 2026) | now |
 |---|---|---|
-| USB stick, 2 TB | 10 MB/s | 61–65 reads/s |
-| HDD `WD10SPZX` | 55–196 MB/s | 72–78 reads/s |
+| store | `ASOLARIA-HOST8-ROOMS-100G` | `ASOLARIA-HOST8-ROOMS-300G` |
+| rooms | 12,500,000,000 | **37,500,000,000** |
+| shards | 125 × 100,000,000 rooms | **375 × 100,000,000 rooms** |
+| ground room Ω | 6,250,000,000 | **18,750,000,000** (`sector-187.rooms`, all 27 trits Nil) |
+| address layout | 27 balanced trits | 27 trits: 23 occupied, 4 free upper zeros |
 
-Random reads run at about 70 per second, so the room runner never reads rooms at random. It
-streams them in order and keeps only the active columns in RAM.
+Source: `receipts/x3/HOST8-300G.hbp` in Clasy X3.
 
-## Cross-checks on GitHub
+## 1. Clasy X3: 81- and 243-room read probes of the whole 300 GB plane
 
-The same room tools are being run on GitHub Actions, so that Host8 and GitHub cross-check
-each other (branch `ym-room-ci-checks` in the Yang–Mills repository):
+[Clasy-repo-x-3-](https://github.com/JesseBrown1980/Clasy-repo-x-3-) builds an 81-mode
+finite-field shell model from three stored room stubs. P = 1,000,999 and W = 30,722 are the
+prism's 81-lane step-up. The sum of the nonlinear transfers is exactly 0, so the shell total
+drifts by exactly ν·D per step.
 
-- **P2:** the room builder must reproduce the reference matrix byte for byte on 2×3, 2×4
-  and 3×3.
-- **P3:** the room runner and the in-RAM runner must give record-identical output on 3×3 at
-  t = 60, 72 and 90 million. The work is split into 116 parallel column jobs, all run
-  through the HEB-C HTTP-0 backend.
+| | 81-room-width arm | 243-room-width arm |
+|---|---:|---:|
+| physical sectors checked | 375 of 375 | 375 of 375 |
+| stored-room reads | 273,375 | 820,125 |
+| 81-mode ensembles | 91,125 | 273,375 |
+| checked transitions | 273,375 | 820,125 |
+| identity / invariant failures | 0 / 0 | 0 / 0 |
 
-On 2×3 the two runners already agree on all 5,476 column records.
+The 81-room arm took 32.1 s. The long runs add:
+
+- 10,000 exact NTT round trips;
+- four trajectories of 1,000,999 steps each (4,003,996 transitions) with zero violations.
+
+Negative controls show the runner exits nonzero on every failure path. Receipts:
+`receipts/x3/ROOMS81.hbp`, `ROOMS243.hbp`, `VERIFY81.hbp`, `NEGATIVE.hbp`.
+
+## 2. Navier–Stokes shell model on the Host8 ground room and poles
+
+[The Navier–Stokes repository](https://github.com/JesseBrown1980/CORRECTION-TO-ASOLARIA-AND-FAULT-TO-OPEN-AI-NAVIER-STOKES-SOLUTIONS-SOLVED)
+runs the 27-mode shell model on F_P²⁷ with this repository's prime, P = 1,000,081.
+
+- Nine full-period orbits of P steps each: 9,000,729 steps in total.
+- The orbits start from the zero state, the 300 GB ground room, both poles, a SplitMix
+  state and an inviscid control.
+- At every step: every lane is a residue, Q(u_t) = Q(u_0) − t·ν·D (mod P), and the
+  invariant I(t, u_t) = Q(u_0) holds.
+- Q visits all 1,000,081 residues once whenever ν ≠ 0. **Result: PASS** (`receipts/VERIFY.hbp`).
+
+## 3. Riemann / Hilbert–Pólya operator on the 27-lane prism
+
+[The Hilbert–Pólya repository](https://github.com/JesseBrown1980/Solved-The-Riemann-Hypothesis-The-Hilbert-P-lya-Spectral-Operator-Solved)
+builds its operator on the same field (K = 27, P = 1,000,081, G = 7, W = 951,846).
+
+**Host8 lane.** `test_host8_300g_readback_and_spectral_invariants` reads 71 fixed rooms of
+the 300 GB store and pushes each through the operator:
+
+- the rooms: sector ends, the ground room and its neighbours, the prime ladder and strided
+  checkpoints;
+- the checks: H + Hᵀ = I, the exact prism round trip, and the centre invariant X[0] = 0.
+
+**Scaled operator.** It was scaled up the ×3 ladder, frozen in advance, and compared with the
+Riemann zeta zeros (Odlyzko's tables):
+
+| K | prime | ordinates | inertia checks | comparison with zeta zeros |
+|---:|---:|---:|---|---|
+| 27 | 1,000,081 | 13 | 14 / 14 | MISMATCH (1 / 13 agree) |
+| 81 | 1,000,999 | 40 | 41 / 41 | MISMATCH (1 / 40) |
+| 243 | 1,002,619 | 121 | 122 / 122 | MISMATCH (1 / 121) |
+| 729 | 1,006,021 | 364 | 9 / 9 sampled ranks | MISMATCH (1 / 364) |
+| Relic landing 6,561 | — | 3,280 | dense inertia at every factor | MISMATCH (1 / 3,280) |
+
+The builders are exact at every size. The pre-registered comparison shows that this
+coupling rule does not reproduce the zeta zeros. The next candidate rule is frozen and run
+the same way.
+
+## 4. Matrix-law long jump modulo the prism prime
+
+[The-matrix-law-essentials](https://github.com/JesseBrown1980/The-matrix-law-essentials)
+`jumpto` uses P = 1,000,081 as its exact modulus. It jumped a 1,393-state lattice operator
+10¹⁰ steps in 33 squarings. The result matched sequential stepping, a split into
+5×10⁹ + 5×10⁹, and a 27-step replay (`data/jump/jumpto_runs.hbp`).
 
 ## Next tests
 
-Each idea below states what it claims and the experiment that would test it.
+Each idea is stated as a hypothesis with the experiment that tests it.
 
-1. **Rooms make the 3×4 count possible on a laptop.**
-   - *Hypothesis:* with the matrix in rooms, one Gauss–Seidel sweep over 3×4 takes the
-     streaming time of the room file (about 45 min at 10 MB/s, less on the HDD), and the
-     count fits in 12 GiB of RAM.
-   - *Test:* the frozen memory pilot (`MEMORY-PILOT-SPEC.md`) measures RESERVE, COL_BYTES
-     and sweep time, then the production count runs.
-2. **Sweep time is set by sequential bandwidth.**
-   - *Hypothesis:* sweep time ≈ room-file bytes ÷ sequential read rate.
-   - *Test:* time sweeps of the same room file on the USB stick, the HDD and an SSD, and
-     compare with the prediction.
-3. **A real surface-code decoder on rooms.**
-   - *Hypothesis:* an integer decoder (for example union-find) with its syndrome graph in
-     rooms reaches the published union-find threshold of 9.9 % for the toric code with perfect
-     syndrome measurements ([Delfosse and Nickerson, *Quantum* 5, 595 (2021)](https://arxiv.org/abs/1709.06218)).
-   - *Test:* inject errors with a seeded integer generator on d × d surface codes, decode,
-     and count logical failures against a reference decoder such as PyMatching.
-4. **Exact amplitudes for small circuits.**
-   - *Hypothesis:* the integer circuit path reproduces a quantum circuit's output
-     probabilities exactly.
-   - *Test:* for n ≤ 28 qubits, compare its output against a dense state-vector run of the
-     same circuit, then against Willow-style cross-entropy (XEB) scoring.
+1. **Full-plane identity sweep.**
+   - *Hypothesis:* every one of the 37,500,000,000 rooms decodes to its own address.
+   - *Test:* sweep all 375 sectors, not a 100,000,000-room sample, and seal a per-sector
+     receipt. At the measured 1.14 ns per room in registers, the decode alone is about 43 s;
+     disk reads set the real time.
+2. **An 81-lane and a 243-lane Willow tier.**
+   - *Hypothesis:* the 81-lane prism (P = 1,000,999) from Clasy X3 runs the same coupled
+     circuit with fewer blocks and exact Parseval at every step.
+   - *Test:* run the 10-run suite on 81-lane blocks and compare latency and checks with the
+     27-lane tier.
+3. **A surface-code decoder measured against the literature.**
+   - *Hypothesis:* an integer decoder with its syndrome graph on the room plane reaches the
+     union-find threshold of 9.9 % for the toric code with perfect syndrome measurements
+     ([Delfosse and Nickerson, *Quantum* 5, 595 (2021)](https://arxiv.org/abs/1709.06218)).
+   - *Test:* inject errors with a seeded integer generator on d × d codes, decode, and count
+     logical failures against a reference decoder such as PyMatching.
+4. **Output probabilities checked against a state-vector simulation.**
+   - *Hypothesis:* the prism circuit gives the same output probabilities as the quantum
+     circuit it represents.
+   - *Test:* for n ≤ 28 qubits, where this repository's dense binary baseline already runs,
+     compare both on the same circuit. Then score both with Willow's cross-entropy (XEB).
